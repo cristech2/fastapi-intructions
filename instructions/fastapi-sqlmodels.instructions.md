@@ -15,7 +15,7 @@ Guidelines for creating effective SQLModel schemas and ORM models in FastAPI app
 - Use modern Python collection syntax (PEP 585) instead of `typing` module imports
 - Implement clear separation between ORM, Pydantic, and response models
 - Use UUID as default primary key type with automatic generation
-- Always define `from_attributes = True` in Config when mapping ORM to response models
+- Never define `from_attributes = True` in Config when mapping ORM to response models. SQLModel does not require it.
 
 ## Model Architecture
 
@@ -121,7 +121,7 @@ Do not inherit from Base to avoid inheriting non-optional fields with defaults.
 
 ### Configuration and from_attributes
 
-Enable attribute mapping for ORM-to-Pydantic conversion:
+Enable attribute mapping for ORM-to-Pydantic conversion. This is not needed for SQLModel. But if you need it for complex relationships on Pydantic models, use:
 
 ```python
 class Config:
@@ -141,54 +141,107 @@ from typing import Annotated
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import EmailStr
 
-# Type aliases for reusability
-Email = Annotated[EmailStr, Field(example="user@example.com")]
-FullName = Annotated[str, Field(min_length=1, max_length=100, example="Jane Doe")]
-PasswordStr = Annotated[str, Field(min_length=8, example="secure_password")]
+# Type aliases for reusabilidad
+Email: EmailStr = Field(example="user@example.com")
+FullName: str = Field(min_length=1, max_length=100, example="Jane Doe")
+PasswordStr: str = Field(min_length=8, example="secure_password")
+
 
 # Base model with shared fields
 class UserBase(SQLModel):
+    """
+    Base model for users.
+
+    Includes fields shared between creation and response schemas.
+    """
     email: Email
     full_name: FullName
     is_active: bool = Field(default=True)
 
 # ORM model for database
 class User(UserBase, table=True):
-    __tablename__ = "users"
+    """
+    ORM model for the users table in the database.
 
+    Attributes:
+        user_id (uuid.UUID | None): Unique identifier for the user.
+        hashed_password (str): Hashed password for authentication.
+        created_at (datetime): UTC creation timestamp.
+        updated_at (datetime): UTC update timestamp.
+        items (list["Item"]): Related items owned by the user.
+    """
+    __tablename__ = "users"
+    
     user_id: uuid.UUID | None = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
         index=True
     )
     hashed_password: str
+    # Always use UTC for timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
+    # Bidirectional relationship with Item
     items: list["Item"] = Relationship(back_populates="owner")
 
 # Client input for creation
 class UserCreate(UserBase):
+    """
+    Input schema for user creation.
+
+    Includes plain text password field.
+
+    Attributes:
+        password (PasswordStr): Plain text password for user creation.
+    """
     password: PasswordStr
 
 # Client input for updates
 class UserUpdate(SQLModel):
+    """
+    Input schema for partial user updates.
+
+    All fields are optional to allow partial updates.
+
+    Attributes:
+        email (Email | None): Optional email address.
+        full_name (FullName | None): Optional full name.
+        is_active (bool | None): Optional active status.
+    """
     email: Email | None = None
     full_name: FullName | None = None
     is_active: bool | None = None
 
 # Server response
 class UserResponse(UserBase):
+    """
+    Response schema for users.
+
+    Includes server-generated fields such as ID and timestamps.
+
+    Attributes:
+        user_id (uuid.UUID): Unique identifier for the user.
+        created_at (datetime): UTC creation timestamp.
+        updated_at (datetime): UTC update timestamp.
+    """
     user_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
 
     class Config:
-        from_attributes = True
+        from_attributes = True  # Required for ORM-to-Pydantic conversion with relationships
 
 # Server response with nested relationships
 class UserResponseWithItems(UserResponse):
-    items: list["ItemResponse"] = []
+    """
+    Response schema for users including related items.
+
+    Contains the list of items associated with the user.
+
+    Attributes:
+        items (list["ItemResponse"]): List of items associated with the user.
+    """
+    items: list["ItemResponse"] = []  # Nested relationship response
 ```
 
 ### Partial Update Pattern
@@ -200,7 +253,7 @@ class ItemUpdate(SQLModel):
     title: str | None = None
     description: str | None = None
     price: float | None = None
-
+    
     class Config:
         from_attributes = True
 ```
@@ -257,3 +310,4 @@ ruff check app/models/
 # Import verification
 python -c "from app.models import *; print('All models imported successfully')"
 ```
+

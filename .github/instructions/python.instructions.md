@@ -34,7 +34,7 @@ This document outlines core principles, performance optimizations, quality pract
     * Ensure lines do not exceed 88 characters.
     * Use blank lines appropriately to separate functions, classes, and code blocks.
 * **Imports**:
-    * **Import only modules and packages** (e.g., `import os`, `import collections.abc`). NEVER use `from my_pkg import MyClass` or `from my_pkg.my_mod import my_func`. This ensures clarity of namespace and avoids ambiguity.
+    * **Prefer importing modules and packages** (e.g., `import os`, `import collections.abc`). Avoid `from my_pkg import MyClass` or `from my_pkg.my_mod import my_func` **unless** following established API conventions (e.g., `from typing import List`, `from sqlmodel import SQLModel`), as this generally ensures clarity of namespace.
     * NEVER use relative imports (e.g., `from . import my_sibling_module`). Use absolute imports from the project's top-level directory for clarity and portability.
     * Follow a logical import order: standard library, third-party, then local modules.
     * Use groups separated by blank lines to organize imports visually.
@@ -56,7 +56,91 @@ This document outlines core principles, performance optimizations, quality pract
 
 ---
 
+
 ## 3. Documentation, Comments & Typing
+
+
+
+### Docstrings: General Rules for All Python Files
+
+Follow **PEP 257** for docstrings in all Python files: modules, functions, classes, and models.
+
+- Docstrings must document the purpose, parameters (`Args`), return values (`Returns`), and exceptions (`Raises`).
+- Use a consistent style (Google).
+- Place the docstring immediately after the `def`, `class`, or at the top of the module.
+- Always use standard technical English.
+- Prefer line length ≤72 characters, never exceeding 88.
+
+
+#### Recommended Structure (Google Style)
+
+- **Module docstring:**
+    ```python
+    """
+    Brief description of the module's purpose.
+
+    Key dependencies:
+        SQLModel, uuid
+    """
+    ```
+
+- **Function docstring:**
+    ```python
+    def add(a: int, b: int) -> int:
+        """
+        Add two integers.
+
+        Args:
+            a (int): First integer.
+            b (int): Second integer.
+
+        Returns:
+            int: The sum of a and b.
+        """
+        return a + b
+    ```
+
+- **Class docstring:**
+    ```python
+    class User:
+        """
+        User model for authentication.
+
+        Attributes:
+            id (int): Unique user identifier.
+            name (str): Username.
+            email (str): User email address.
+        """
+        ...
+    ```
+
+- **Model docstring with example:**
+    ```python
+    class RecipeIngredients:
+        """
+        Table model for recipe-ingredient relation.
+
+        Attributes:
+            recipe_ingredient_id (uuid.UUID): Unique primary key.
+            recipe_id (uuid.UUID): Foreign key to recipe.
+            ingredient_id (uuid.UUID): Foreign key to ingredient.
+            ingredient (Ingredients): Ingredient model relation.
+            recipe (Recipes): Recipe model relation.
+
+        Example:
+            obj = RecipeIngredients(
+                recipe_id=uuid.uuid4(),
+                ingredient_id=uuid.uuid4(),
+                quantity=1.0
+            )
+        """
+        ...
+    ```
+
+#### Consistency
+- Always use the same headers and abbreviations throughout the file and related project files.
+- Only include the “Example” section where usage adds value (input/output models and main tables).
+- Omit examples in base classes or where not relevant.
 
 **Type Hints:**
 - Always use type hints for all function parameters, variables, and return values (PEP 484).
@@ -73,15 +157,6 @@ This document outlines core principles, performance optimizations, quality pract
 - For duck typing, use `typing.Protocol` (PEP 544) to define structural interfaces.
 - Avoid using `typing.Any` unless strictly necessary and justified with a comment.
 
-**Docstrings:**
-**Note:**
-Use docstrings and comments for documentation intended for humans.
-`Annotated` should only be used when metadata is consumed by tools (e.g., Pydantic, FastAPI) for validation, documentation, or autocompletion.
-Do not use `Annotated` for descriptive comments—prefer docstrings or inline comments instead.
-- Provide docstrings following **PEP 257** conventions for all public modules, functions, classes, and methods.
-- Docstrings must document the purpose, parameters (`Args`), return values (`Returns`), and any exceptions raised (`Raises`).
-- Follow a consistent style (e.g., Google, NumPy, or reStructuredText).
-- Place docstrings immediately after the `def` or `class` keyword.
 
 **Comments:**
 - Write clear and concise comments.

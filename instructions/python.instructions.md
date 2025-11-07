@@ -34,7 +34,7 @@ This document outlines core principles, performance optimizations, quality pract
     * Ensure lines do not exceed 88 characters.
     * Use blank lines appropriately to separate functions, classes, and code blocks.
 * **Imports**:
-    * **Import only modules and packages** (e.g., `import os`, `import collections.abc`). NEVER use `from my_pkg import MyClass` or `from my_pkg.my_mod import my_func`. This ensures clarity of namespace and avoids ambiguity.
+    * **Prefer importing modules and packages** (e.g., `import os`, `import collections.abc`). Avoid `from my_pkg import MyClass` or `from my_pkg.my_mod import my_func` **unless** following established API conventions (e.g., `from typing import List`, `from sqlmodel import SQLModel`), as this generally ensures clarity of namespace.
     * NEVER use relative imports (e.g., `from . import my_sibling_module`). Use absolute imports from the project's top-level directory for clarity and portability.
     * Follow a logical import order: standard library, third-party, then local modules.
     * Use groups separated by blank lines to organize imports visually.
